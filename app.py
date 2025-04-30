@@ -102,38 +102,23 @@ def get_ai_trading_comment(data):
 
 # -------- PARSING FUNGSI --------
 def parse_trading_summary(text):
-    try:
-        date_match = re.search(r"📅\s*(.+?)\s+Daily", text)
-        date = date_match.group(1) if date_match else "Unknown"
+    date_match = re.search(r"📅\s*(.+?)\s+Daily", text)
+    date = date_match.group(1) if date_match else "Unknown"
 
-        total_signals_match = re.search(r"Total Signal[s]?:\s*(\d+)", text)
-        if not total_signals_match:
-            raise ValueError("Total Signal tidak ditemukan dalam teks")
-        total_signals = int(total_signals_match.group(1))
+    total_signals = int(re.search(r"Total Signals:\s*(\d+)", text).group(1))
+    tp = int(re.search(r"Take-Profits:\s*(\d+)", text).group(1))
+    sl = int(re.search(r"Stop-Losses:\s*(\d+)", text).group(1))
+    finished = tp + sl
+    winrate = round((tp / finished) * 100, 2) if finished > 0 else 0
 
-        tp_match = re.search(r"Take[-\s]?Profit[s]?:\s*(\d+)", text)
-        if not tp_match:
-            raise ValueError("Take-Profit tidak ditemukan dalam teks")
-        tp = int(tp_match.group(1))
-
-        sl_match = re.search(r"Stop[-\s]?Loss(?:es)?:\s*(\d+)", text)
-        if not sl_match:
-            raise ValueError("Stop-Loss tidak ditemukan dalam teks")
-        sl = int(sl_match.group(1))
-
-        finished = tp + sl
-        winrate = round((tp / finished) * 100, 2) if finished > 0 else 0
-
-        return {
-            "Date": date,
-            "Total_Signal": total_signals,
-            "Finished": finished,
-            "TP": tp,
-            "SL": sl,
-            "Winrate_pct": winrate,
-        }
-    except Exception as e:
-        raise ValueError(f"Format teks tidak valid: {str(e)}")
+    return {
+        "Date": date,
+        "Total_Signal": total_signals,
+        "Finished": finished,
+        "TP": tp,
+        "SL": sl,
+        "Winrate_pct": winrate,
+    }
 
 # -------- BACKUP KOMENTAR GENERATOR (FALLBACK) --------
 def generate_backup_comment(data):
@@ -188,15 +173,7 @@ def generate_backup_comment(data):
     return comment
 
 # -------- UI STREAMLIT --------
-st.set_page_config(
-    page_title="Trading Report | Lian Capital",
-    page_icon="📊",
-    layout="centered",
-    initial_sidebar_state="collapsed",
-)
-
 st.title("📊 Rekapan Hasil Trading Harian")
-st.markdown("Aplikasi sederhana untuk mencatat dan menganalisis performa trading harian Anda.")
 
 if 'result' not in st.session_state:
     st.session_state.result = None
@@ -205,47 +182,23 @@ if 'upload_success' not in st.session_state:
 if 'ai_comment_loading' not in st.session_state:
     st.session_state.ai_comment_loading = False
 
-# Reset button (header)
-if st.session_state.result and not st.session_state.ai_comment_loading:
-    if st.button("🔄 Input Baru", key="reset_top"):
-        st.session_state.result = None
-        st.session_state.upload_success = False
-        st.experimental_rerun()
+# Input otomatis
+input_text = st.text_area("Masukkan teks rekap sinyal trading:", height=300)
+process_btn = st.button("🔍 Proses dan Hitung")
 
-# Contoh pesan untuk panduan format
-if not st.session_state.result:
-    st.info("""
-    ℹ️ **Format Input:**
-    ```
-    📅 18 April 2025 Daily Trading Report
-    
-    Total Signals: 15
-    Take-Profits: 10
-    Stop-Losses: 3
-    ```
-    """)
+# Input manual
+st.markdown("---")
+st.subheader("Atau Input Manual")
+col1, col2 = st.columns(2)
+with col1:
+    manual_date = st.text_input("Tanggal:", placeholder="Contoh: 28 April 2025")
+    manual_total = st.number_input("Total Signal:", min_value=0, value=0)
+    manual_tp = st.number_input("Take-Profits:", min_value=0, value=0)
+with col2:
+    manual_sl = st.number_input("Stop-Losses:", min_value=0, value=0)
+    manual_comment = st.text_input("Comment (opsional):", placeholder="Kosongkan untuk menggunakan AI")
 
-# Area input teks
-input_placeholder = """📅 DD Bulan YYYY Daily Trading Report
-
-Total Signals: XX
-Take-Profits: XX
-Stop-Losses: XX"""
-
-if not st.session_state.result:
-    input_text = st.text_area(
-        "Salin & tempel rekap trading Anda di sini:",
-        placeholder=input_placeholder,
-        height=200
-    )
-    
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        process_btn = st.button("🔍 Proses dan Hitung", use_container_width=True)
-    with col2:
-        clear_btn = st.button("🧹 Bersihkan", use_container_width=True)
-        if clear_btn:
-            st.experimental_rerun()
+manual_btn = st.button("💾 Simpan Data Manual")
 
 # Proses parsing otomatis
 if process_btn and input_text:
@@ -259,16 +212,32 @@ if process_btn and input_text:
         
     except Exception as e:
         st.error(f"❌ Error saat parsing: {str(e)}")
-        st.markdown("""
-        **Pastikan format sesuai contoh:**
-        ```
-        📅 Tanggal Daily Trading Report
+
+# Proses input manual
+if manual_btn:
+    if manual_date and manual_total >= 0 and manual_tp >= 0 and manual_sl >= 0:
+        finished = manual_tp + manual_sl
+        winrate = round((manual_tp / finished) * 100, 2) if finished > 0 else 0
+        result_data = {
+            "Date": manual_date,
+            "Total_Signal": manual_total,
+            "Finished": finished,
+            "TP": manual_tp,
+            "SL": manual_sl,
+            "Winrate_pct": winrate,
+        }
         
-        Total Signals: [Angka]
-        Take-Profits: [Angka]
-        Stop-Losses: [Angka]
-        ```
-        """)
+        # Gunakan komentar manual jika disediakan
+        if manual_comment:
+            result_data["Comment"] = manual_comment
+            st.session_state.result = result_data
+        else:
+            # Set untuk mendapatkan AI comment
+            st.session_state.result = result_data
+            st.session_state.ai_comment_loading = True
+            st.experimental_rerun()
+    else:
+        st.warning("⚠️ Harap isi semua field dengan benar")
 
 # Proses loading AI comment jika diperlukan
 if st.session_state.ai_comment_loading and st.session_state.result:
@@ -282,174 +251,72 @@ if st.session_state.ai_comment_loading and st.session_state.result:
             st.session_state.result["Comment"] = backup_comment
         
         st.session_state.ai_comment_loading = False
-        st.experimental_rerun()
 
-# Tampilkan hasil
+# Upload
 if st.session_state.result and not st.session_state.ai_comment_loading:
     st.markdown("---")
-    st.subheader("📋 Hasil Analisis:")
+    st.subheader("📋 Hasil Data:")
     
-    # Buat kartu metrik dengan gaya yang lebih baik
-    col1, col2, col3 = st.columns(3)
-    
+    # Tampilkan data dan beri opsi untuk mengedit komentar
+    col1, col2 = st.columns(2)
     with col1:
         st.metric("Total Signal", st.session_state.result["Total_Signal"])
-    with col2:
         st.metric("Take-Profits", st.session_state.result["TP"])
-    with col3:
         st.metric("Stop-Losses", st.session_state.result["SL"])
-    
-    col4, col5, col6 = st.columns(3)
-    with col4:
+    with col2:
         st.metric("Tanggal", st.session_state.result["Date"])
-    with col5:
         st.metric("Finished", st.session_state.result["Finished"])
-    with col6:
-        # Warna berdasarkan winrate
-        winrate = st.session_state.result["Winrate_pct"]
-        delta_color = "normal"
-        if winrate >= 70:
-            delta_color = "good"
-        elif winrate < 50:
-            delta_color = "inverse"
-        st.metric("Winrate", f"{winrate}%", delta=f"{winrate-50:+.1f}% dari 50%", delta_color=delta_color)
+        st.metric("Winrate", f"{st.session_state.result['Winrate_pct']}%")
 
-    # Tampilkan komentar AI
-    st.subheader("💡 Analisis Trading:")
+    # Edit komentar AI
+    st.subheader("Komentar AI Trading:")
     st.info(st.session_state.result.get("Comment", ""))
-    
-    # Edit komentar AI jika perlu
     edited_comment = st.text_area(
-        "Edit analisis jika diperlukan:",
+        "Edit komentar jika diperlukan:",
         value=st.session_state.result.get("Comment", ""),
         height=100
     )
     st.session_state.result["Comment"] = edited_comment
 
     # Tombol upload final
-    col_back, col_upload = st.columns([1, 2])
-    
-    with col_back:
-        if st.button("« Kembali", use_container_width=True):
-            st.session_state.result = None
-            st.experimental_rerun()
-    
-    with col_upload:
-        upload_btn = st.button("📤 Simpan ke Google Sheets", key="upload_final", use_container_width=True)
-    
+    upload_btn = st.button("📤 Upload ke Google Sheets", key="upload_final")
     if upload_btn:
         try:
-            with st.spinner("Menyimpan data..."):
-                sheet = connect_to_gsheet()
-                sheet.append_row([
-                    st.session_state.result["Date"],
-                    st.session_state.result["Total_Signal"],
-                    st.session_state.result["Finished"],
-                    st.session_state.result["TP"],
-                    st.session_state.result["SL"],
-                    f"{st.session_state.result['Winrate_pct']}%",
-                    st.session_state.result["Comment"]
-                ])
-            st.success("✅ Data berhasil disimpan ke Google Sheets!")
+            sheet = connect_to_gsheet()
+            sheet.append_row([
+                st.session_state.result["Date"],
+                st.session_state.result["Total_Signal"],
+                st.session_state.result["Finished"],
+                st.session_state.result["TP"],
+                st.session_state.result["SL"],
+                f"{st.session_state.result['Winrate_pct']}%",
+                st.session_state.result["Comment"]
+            ])
+            st.success("✅ Data berhasil diupload ke Google Sheets!")
             st.balloons()
-            
-            # Tampilkan link ke spreadsheet
             st.markdown(f"[🔗 Lihat Spreadsheet](https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID})")
-            
-            # Reset status dan tampilkan tombol untuk data baru
             st.session_state.upload_success = True
             
-            if st.button("➕ Tambah Data Baru", key="add_new"):
-                st.session_state.result = None
-                st.session_state.upload_success = False
-                st.experimental_rerun()
-                
+            # Reset hasil setelah upload berhasil
+            if st.session_state.upload_success:
+                if st.button("➕ Tambah Data Baru"):
+                    st.session_state.result = None
+                    st.session_state.upload_success = False
+                    st.experimental_rerun()
         except Exception as e:
             st.error(f"❌ Gagal upload: {str(e)}")
 
-# Tampilkan statistik historis dalam expander
-with st.expander("📈 Statistik Trading (7 Hari Terakhir)"):
-    if st.button("🔄 Muat Statistik"):
-        try:
-            import pandas as pd
-            import matplotlib.pyplot as plt
-            import altair as alt
-            from datetime import datetime, timedelta
-            
-            sheet = connect_to_gsheet()
-            
-            # Ambil semua data
-            data = sheet.get_all_records()
-            
-            if data:
-                df = pd.DataFrame(data)
-                
-                # Konversi winrate dari string ke numerik
-                if 'Winrate' in df.columns:
-                    df['Winrate_num'] = df['Winrate'].str.rstrip('%').astype(float)
-                
-                # Tunjukkan hanya 7 data terakhir
-                df_recent = df.tail(7)
-                
-                # Buat chart dengan Altair
-                if len(df_recent) > 0:
-                    # Winrate Chart
-                    st.write("### Winrate 7 Hari Terakhir")
-                    chart_winrate = alt.Chart(df_recent).mark_line(point=True).encode(
-                        x=alt.X('Date:N', title='Tanggal', sort=None),
-                        y=alt.Y('Winrate_num:Q', title='Winrate (%)', scale=alt.Scale(domain=[0, 100])),
-                        tooltip=['Date', 'Winrate', 'Total_Signal', 'TP', 'SL']
-                    ).properties(height=250)
-                    st.altair_chart(chart_winrate, use_container_width=True)
-                    
-                    # TP/SL Chart
-                    st.write("### Perbandingan TP vs SL")
-                    df_melted = pd.melt(df_recent, id_vars=['Date'], value_vars=['TP', 'SL'], 
-                                      var_name='Type', value_name='Count')
-                    
-                    chart_tpsl = alt.Chart(df_melted).mark_bar().encode(
-                        x=alt.X('Date:N', title='Tanggal'),
-                        y=alt.Y('Count:Q', title='Jumlah'),
-                        color=alt.Color('Type:N', scale=alt.Scale(
-                            domain=['TP', 'SL'],
-                            range=['#36b37e', '#ff5630']
-                        )),
-                        tooltip=['Date', 'Type', 'Count']
-                    ).properties(height=250)
-                    st.altair_chart(chart_tpsl, use_container_width=True)
-                    
-                    # Ringkasan statistik
-                    st.write("### Ringkasan Statistik")
-                    avg_winrate = df_recent['Winrate_num'].mean()
-                    total_tp = df_recent['TP'].sum()
-                    total_sl = df_recent['SL'].sum() 
-                    total_signals = df_recent['Total_Signal'].sum()
-                    
-                    col1, col2, col3 = st.columns(3)
-                    col1.metric("Rata-rata Winrate", f"{avg_winrate:.1f}%")
-                    col2.metric("Total TP", total_tp)
-                    col3.metric("Total SL", total_sl)
-                    
-                    # Baris kedua
-                    col4, col5, col6 = st.columns(3)
-                    col4.metric("Total Signals", total_signals)
-                    
-                    if total_tp + total_sl > 0:
-                        overall_winrate = (total_tp / (total_tp + total_sl)) * 100
-                        col5.metric("Overall Winrate", f"{overall_winrate:.1f}%")
-                    
-                    completion_rate = ((total_tp + total_sl) / total_signals) * 100 if total_signals > 0 else 0
-                    col6.metric("Completion Rate", f"{completion_rate:.1f}%")
-                    
-                    # Data lengkap
-                    st.write("### Data 7 Hari Terakhir")
-                    st.dataframe(df_recent[['Date', 'Total_Signal', 'TP', 'SL', 'Winrate']], use_container_width=True)
-                else:
-                    st.info("Belum ada data yang cukup untuk ditampilkan")
-            else:
-                st.info("Belum ada data yang tersimpan dalam Google Sheets")
-        except Exception as e:
-            st.error(f"Gagal memuat statistik: {str(e)}")
+# Contoh input
+with st.expander("ℹ️ Contoh Format Input"):
+    st.markdown("""
+    ```
+    📅 18 April 2025 Daily Trading Report
+    
+    Total Signals: 15
+    Take-Profits: 10
+    Stop-Losses: 3
+    ```
+    """)
 
 # Tambahkan petunjuk konfigurasi
 with st.expander("🔧 Konfigurasi"):
@@ -458,27 +325,47 @@ with st.expander("🔧 Konfigurasi"):
     
     Untuk konfigurasi yang benar, tambahkan secrets berikut ke Streamlit Cloud:
     
-    1. `OPENAI_API_KEY` - untuk generate komentar AI
-    2. `gcp_service_account` - untuk akses Google Sheets
+    1. `OPENAI_API_KEY` = "api-key-anda"
+    2. `gcp_service_account` = {...} (objek JSON credential Google Service Account)
     
-    Format TOML yang benar:
-    ```toml
-    OPENAI_API_KEY = "sk-your-api-key"
-    
-    [gcp_service_account]
-    type = "service_account"
-    project_id = "your-project-id"
-    private_key_id = "your-key-id"
-    private_key = "-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n"
-    client_email = "your-service-account@your-project.iam.gserviceaccount.com"
-    client_id = "your-client-id"
-    auth_uri = "https://accounts.google.com/o/oauth2/auth"
-    token_uri = "https://oauth2.googleapis.com/token"
-    auth_provider_x509_cert_url = "https://www.googleapis.com/oauth2/v1/certs"
-    client_x509_cert_url = "https://www.googleapis.com/robot/v1/metadata/x509/your-service-account"
-    universe_domain = "googleapis.com"
-    ```
+    Atau tambahkan sebagai environment variable pada deployment lokal.
     """)
 
+# Tampilkan statistik historis jika tersedia
+with st.expander("📈 Statistik Trading (7 Hari Terakhir)"):
+    st.info("Untuk melihat statistik historis, pastikan Anda telah mengupload data sebelumnya.")
+    if st.button("🔄 Muat Statistik"):
+        try:
+            sheet = connect_to_gsheet()
+            # Ambil 7 data terakhir
+            data = sheet.get_all_records()[-7:]
+            if data:
+                import pandas as pd
+                import altair as alt
+                
+                df = pd.DataFrame(data)
+                
+                # Konversi winrate dari string ke numerik jika perlu
+                if 'Winrate' in df.columns:
+                    df['Winrate_num'] = df['Winrate'].str.rstrip('%').astype(float)
+                
+                # Buat chart
+                if len(df) > 0:
+                    st.write("### Winrate 7 Hari Terakhir")
+                    chart = alt.Chart(df).mark_line().encode(
+                        x=alt.X('Date:N', title='Tanggal'),
+                        y=alt.Y('Winrate_num:Q', title='Winrate (%)')
+                    ).properties(height=200)
+                    st.altair_chart(chart, use_container_width=True)
+                    
+                    st.write("### Data Lengkap")
+                    st.dataframe(df)
+                else:
+                    st.write("Belum ada data yang cukup untuk ditampilkan")
+            else:
+                st.write("Belum ada data yang tersimpan")
+        except Exception as e:
+            st.error(f"Gagal memuat statistik: {str(e)}")
+
 st.markdown("---")
-st.markdown("<div style='text-align: center'>Made with ❤️ by Lian Capital</div>", unsafe_allow_html=True)
+st.markdown("Made with ❤️ by Lian Capital")
