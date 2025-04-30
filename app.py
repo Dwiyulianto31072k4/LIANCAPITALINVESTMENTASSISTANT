@@ -344,8 +344,13 @@ if st.session_state.result and not st.session_state.ai_comment_loading:
         try:
             with st.spinner("Menyimpan data..."):
                 sheet = connect_to_gsheet()
+                
+                # Format tanggal yang lebih konsisten untuk keperluan analisis
+                date_str = st.session_state.result["Date"]
+                
+                # Simpan data ke Google Sheets
                 sheet.append_row([
-                    st.session_state.result["Date"],
+                    date_str,  # Simpan tanggal asli
                     st.session_state.result["Total_Signal"],
                     st.session_state.result["Finished"],
                     st.session_state.result["TP"],
