@@ -306,19 +306,16 @@ if st.session_state.result and not st.session_state.ai_comment_loading:
     with col5:
         st.metric("Finished", st.session_state.result["Finished"])
     with col6:
-        # PERBAIKAN: Hapus parameter delta_color yang menyebabkan error
+        # PERBAIKAN: Gunakan metrik sederhana tanpa parameter delta
         winrate = st.session_state.result["Winrate_pct"]
         
-        # Gunakan kondisional untuk menerapkan warna yang tepat
+        # Tampilkan winrate dengan warna berdasarkan nilai
         if winrate >= 70:
-            delta_value = f"{winrate-50:+.1f}% dari 50%"
-            st.metric("Winrate", f"{winrate}%", delta=delta_value, delta_color="good")
+            st.markdown(f"<h3 style='color:#36B37E'>Winrate: {winrate}%</h3>", unsafe_allow_html=True)
         elif winrate < 50:
-            delta_value = f"{winrate-50:+.1f}% dari 50%"
-            st.metric("Winrate", f"{winrate}%", delta=delta_value, delta_color="inverse")
+            st.markdown(f"<h3 style='color:#FF5630'>Winrate: {winrate}%</h3>", unsafe_allow_html=True)
         else:
-            delta_value = f"{winrate-50:+.1f}% dari 50%"
-            st.metric("Winrate", f"{winrate}%", delta=delta_value, delta_color="normal")
+            st.markdown(f"<h3>Winrate: {winrate}%</h3>", unsafe_allow_html=True)
 
     # Tampilkan komentar AI
     st.subheader("💡 Analisis Trading:")
