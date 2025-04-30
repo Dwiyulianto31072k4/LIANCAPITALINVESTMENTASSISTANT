@@ -370,7 +370,6 @@ if st.session_state.result and not st.session_state.ai_comment_loading:
         except Exception as e:
             st.error(f"❌ Gagal upload: {str(e)}")
 
-# Tampilkan statistik historis dalam expander
 with st.expander("📈 Statistik Trading (7 Hari Terakhir)"):
     if st.button("🔄 Muat Statistik"):
         try:
@@ -379,15 +378,30 @@ with st.expander("📈 Statistik Trading (7 Hari Terakhir)"):
             
             sheet = connect_to_gsheet()
             
-            # Ambil semua data
+            # Get all data
             data = sheet.get_all_records()
             
             if data:
                 df = pd.DataFrame(data)
                 
-                # Konversi winrate dari string ke numerik
-                if 'Winrate' in df.columns:
-                    df['Winrate_num'] = df['Winrate'].str.rstrip('%').astype(float)
+                # First check what columns are actually available
+                st.write("Available columns:", df.columns.tolist())
+                
+                # Find the winrate column (adapt to whatever name is actually in your sheet)
+                winrate_col = None
+                for col in df.columns:
+                    if 'winrate' in col.lower() or 'win rate' in col.lower() or 'win_rate' in col.lower():
+                        winrate_col = col
+                        break
+                
+                if not winrate_col:
+                    st.error("Couldn't find a column containing winrate. Check your sheet headers.")
+                    return
+                
+                # Convert winrate from string to numeric (handling % symbol if present)
+                df['Winrate_num'] = df[winrate_col].astype(str).str.rstrip('%').astype(float)
+                
+                # Continue with the rest of your code...
                 
                 # Tunjukkan hanya 7 data terakhir
                 df_recent = df.tail(7)
