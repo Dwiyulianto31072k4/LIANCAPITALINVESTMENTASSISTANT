@@ -1,4 +1,3 @@
-import os
 import re, datetime as dt
 import streamlit as st
 import pandas as pd
@@ -6,62 +5,27 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
 # Konfigurasi Google Sheets
-default_sheet_id = "1g3XL1EllHoWV3jhmi7gT3at6MtCNTJBo8DQ1WyWhMEo"
-default_worksheet = "Tabel1"
-json_keyfile = "lian-408711-8736ae6e6b31.json"  # ganti sesuai nama file JSON Anda
+KEYFILE = "lian-408711-8736ae6e6b31.json"
+SHEET_ID = "1g3XL1EllHoWV3jhmi7gT3at6MtCNTJBo8DQ1WyWhMEo"
+WS_NAME = "Tabel1"
 
 @st.cache_resource
-def connect_sheet(sheet_id=default_sheet_id, worksheet=default_worksheet):
+def connect_sheet():
     try:
         scope = [
             "https://spreadsheets.google.com/feeds",
             "https://www.googleapis.com/auth/drive",
         ]
-        
-        # Coba menggunakan file JSON
-        try:
-            creds = ServiceAccountCredentials.from_json_keyfile_name(json_keyfile, scope)
-        except Exception as json_error:
-            st.warning(f"Gagal membaca file JSON: {str(json_error)}")
-            st.info("Mencoba metode alternatif...")
-            
-            # Jika file JSON tidak dapat diakses, coba gunakan alternatif (jika tersedia)
-            try:
-                # Alternatif 1: Periksa apakah ada environment variable
-                if os.environ.get('GOOGLE_APPLICATION_CREDENTIALS'):
-                    creds = ServiceAccountCredentials.from_json_keyfile_name(
-                        os.environ['GOOGLE_APPLICATION_CREDENTIALS'], scope)
-                # Alternatif 2: Coba gunakan Streamlit secrets jika tersedia
-                elif 'gcp_service_account' in st.secrets:
-                    import json
-                    creds_dict = st.secrets["gcp_service_account"]
-                    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-                else:
-                    raise Exception("Tidak ada metode autentikasi alternatif yang tersedia")
-            except Exception as alt_error:
-                st.error(f"Semua metode autentikasi gagal: {str(alt_error)}")
-                return None
-        
+        # Coba load credential
+        creds = ServiceAccountCredentials.from_json_keyfile_name(KEYFILE, scope)
         client = gspread.authorize(creds)
-        sheet = client.open_by_key(sheet_id).worksheet(worksheet)
-        
-        # Uji koneksi dengan mencoba mendapatkan data
-        sheet.cell(1, 1).value
-        
-        st.success("✅ Berhasil terhubung ke Google Sheets!")
-        return sheet
-    
-    except gspread.exceptions.SpreadsheetNotFound:
-        st.error(f"Spreadsheet dengan ID {sheet_id} tidak ditemukan. Pastikan ID benar dan service account memiliki akses.")
-    except gspread.exceptions.WorksheetNotFound:
-        st.error(f"Worksheet '{worksheet}' tidak ditemukan. Pastikan nama worksheet benar.")
-    except gspread.exceptions.APIError as api_error:
-        st.error(f"Google API Error: {str(api_error)}")
-        st.info("Pastikan service account memiliki izin untuk mengakses spreadsheet ini.")
+        # Coba buka worksheet
+        ws = client.open_by_key(SHEET_ID).worksheet(WS_NAME)
+        st.success(f"✅ Berhasil terhubung! Jumlah baris sekarang: {len(ws.get_all_values())}")
+        return ws
     except Exception as e:
-        st.error(f"Error tidak terduga: {type(e).__name__}: {str(e)}")
-    
-    return None
+        st.error(f"Error koneksi: {type(e).__name__}: {str(e)}")
+        return None
 
 # Fungsi parsing laporan harian
 def parse_report(text: str) -> dict:
@@ -104,13 +68,6 @@ def parse_report(text: str) -> dict:
 
 # Aplikasi Streamlit 
 st.title("🟢 Daily Crypto Signal Recorder")
-
-# Tambah info debugging untuk kredensial
-if st.sidebar.checkbox("Mode Debug", False):
-    st.sidebar.info(f"File JSON path: {os.path.abspath(json_keyfile)}")
-    st.sidebar.info(f"File exists: {os.path.exists(json_keyfile)}")
-    st.sidebar.info(f"Current directory: {os.getcwd()}")
-    st.sidebar.info(f"Files in directory: {', '.join(os.listdir())}")
 
 # Coba hubungkan ke Google Sheets
 ws = connect_sheet()
@@ -203,4 +160,3 @@ Stop-Losses: 3""")
             st.json(record)
         except Exception as e:
             st.error(f"Gagal parsing: {str(e)}")
-            
