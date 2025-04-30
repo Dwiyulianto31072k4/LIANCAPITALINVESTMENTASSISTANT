@@ -13,18 +13,36 @@ SHEET_NAME = "Sheet1"
 # -------- KONEKSI GOOGLE SHEETS --------
 @st.cache_resource
 def connect_to_gsheet():
-    # Ambil dari secrets (sudah aman, tidak hardcode!)
-    credentials_info = json.loads(st.secrets["credentials_json"])
-    credentials = Credentials.from_service_account_info(
-        credentials_info,
-        scopes=[
-            "https://www.googleapis.com/auth/spreadsheets",
-            "https://www.googleapis.com/auth/drive",
-        ]
-    )
-    client = gspread.authorize(credentials)
-    sheet = client.open_by_key(SPREADSHEET_ID).worksheet(SHEET_NAME)
-    return sheet
+    try:
+        # Sesuaikan dengan nama kunci yang Anda gunakan di Streamlit Cloud
+        if "gcp_service_account" in st.secrets:
+            credentials_info = st.secrets["gcp_service_account"]
+        elif "credentials_json" in st.secrets:
+            if isinstance(st.secrets["credentials_json"], dict):
+                credentials_info = st.secrets["credentials_json"]
+            else:
+                credentials_info = json.loads(st.secrets["credentials_json"])
+        else:
+            # Coba baca dari environment untuk development lokal
+            credentials_json_str = os.environ.get("CREDENTIALS_JSON")
+            if credentials_json_str:
+                credentials_info = json.loads(credentials_json_str)
+            else:
+                raise ValueError("Kredensial Google Sheets tidak ditemukan. Pastikan secret 'gcp_service_account' atau 'credentials_json' sudah dikonfigurasi.")
+        
+        credentials = Credentials.from_service_account_info(
+            credentials_info,
+            scopes=[
+                "https://www.googleapis.com/auth/spreadsheets",
+                "https://www.googleapis.com/auth/drive",
+            ]
+        )
+        client = gspread.authorize(credentials)
+        sheet = client.open_by_key(SPREADSHEET_ID).worksheet(SHEET_NAME)
+        return sheet
+    except Exception as e:
+        st.error(f"Detail error koneksi Google Sheets: {str(e)}")
+        raise e
 
 # -------- KONEKSI OPENAI API --------
 def get_openai_client():
@@ -41,31 +59,46 @@ def get_ai_trading_comment(data):
         return "AI analisis tidak tersedia (API key tidak dikonfigurasi)"
     
     # Siapkan prompt untuk AI dengan data trading
+    winrate = data["Winrate_pct"]
+    tp = data["TP"]
+    sl = data["SL"]
+    completion_rate = (data["Finished"] / data["Total_Signal"] * 100) if data["Total_Signal"] > 0 else 0
+    
     prompt = f"""
-    Analisis data trading berikut dan berikan komentar singkat dalam Bahasa Indonesia (max 50 kata):
+    Analisis data trading berikut dan berikan komentar profesional dalam Bahasa Indonesia (maksimal 80 kata):
+    
     - Tanggal: {data['Date']}
     - Total Signal: {data['Total_Signal']}
-    - Take-Profits: {data['TP']}
-    - Stop-Losses: {data['SL']}
+    - Take-Profits: {tp}
+    - Stop-Losses: {sl}
     - Finished: {data['Finished']}
-    - Winrate: {data['Winrate_pct']}%
+    - Winrate: {winrate}%
+    - Tingkat Penyelesaian: {completion_rate:.1f}%
     
-    Fokus pada: kualitas performa, rasio TP/SL, tingkat penyelesaian sinyal, dan berikan insight tentang strategi trading. Berikan juga rekomendasi singkat untuk hari trading berikutnya.
+    Berikan analisis yang tajam dan membantu para trader dengan memperhatikan:
+    1. Kualitas performa trading (apakah winrate bagus atau kurang)
+    2. Evaluasi rasio TP/SL dan signifikansinya
+    3. Tingkat penyelesaian sinyal dan implikasinya
+    4. Saran konkret untuk meningkatkan performa trading hari berikutnya
+    5. Jika winrate di bawah 50%, berikan motivasi positif
+    
+    Komentar harus objektif, padat, dan langsung ke titik masalah.
     """
     
     try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo", # atau "gpt-4" untuk hasil lebih baik
             messages=[
-                {"role": "system", "content": "Kamu adalah analis trading profesional yang memberikan insight singkat dan tajam."},
+                {"role": "system", "content": "Kamu adalah analis trading profesional yang memberikan insight tajam, profesional dan bernilai tinggi. Kamu memahami berbagai strategi trading dan metrik kinerja."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=100
+            max_tokens=150,
+            temperature=0.7
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
         st.error(f"Error saat menghubungi AI: {str(e)}")
-        return f"Gagal mendapatkan analisis AI: {str(e)}"
+        return generate_backup_comment(data)  # Gunakan backup comment jika AI gagal
 
 # -------- PARSING FUNGSI --------
 def parse_trading_summary(text):
@@ -98,33 +131,45 @@ def generate_backup_comment(data):
     
     # Analisis winrate
     if winrate >= 80:
-        performance = "Performa sangat baik"
+        performance = "Performa sangat baik dengan winrate tinggi"
     elif winrate >= 70:
-        performance = "Performa baik"
+        performance = "Performa baik dengan winrate solid"
     elif winrate >= 60:
-        performance = "Performa cukup baik"
+        performance = "Performa cukup baik, masih di atas rata-rata market"
     elif winrate >= 50:
-        performance = "Performa rata-rata"
+        performance = "Performa rata-rata, perlu ditingkatkan"
     else:
-        performance = "Performa di bawah rata-rata"
+        performance = "Performa di bawah rata-rata, perlu evaluasi strategi"
     
     # Analisis rasio penyelesaian
     completion_rate = (finished / total) * 100 if total > 0 else 0
     if completion_rate >= 90:
-        completion = "Tingkat penyelesaian tinggi"
+        completion = "Tingkat eksekusi sinyal sangat baik"
     elif completion_rate >= 70:
-        completion = "Tingkat penyelesaian baik"
+        completion = "Tingkat eksekusi sinyal cukup baik"
     else:
-        completion = "Tingkat penyelesaian rendah"
+        completion = "Perlu meningkatkan tingkat eksekusi sinyal"
     
     # Analisis rasio TP:SL
-    if tp > 0 and sl > 0:
-        ratio = f"Rasio TP:SL adalah {tp}:{sl}"
+    if tp > sl and tp > 0:
+        ratio = f"Rasio TP:SL positif {tp}:{sl} menunjukkan strategi efektif"
+    elif tp == sl and tp > 0:
+        ratio = f"Rasio TP:SL seimbang {tp}:{sl}, perlu ditingkatkan"
+    elif tp > 0 and sl > 0:
+        ratio = f"Rasio TP:SL negatif {tp}:{sl}, perlu perbaikan strategi"
     else:
-        ratio = ""
+        ratio = "Belum cukup data untuk analisis rasio TP:SL"
+    
+    # Rekomendasi
+    if winrate >= 60:
+        recommendation = "Pertahankan strategi dan tingkatkan volume trading secara bertahap."
+    elif winrate >= 50:
+        recommendation = "Evaluasi setup trading yang kurang optimal, fokus pada kualitas sinyal."
+    else:
+        recommendation = "Revisi strategi entry/exit dan atur ulang parameter risk management."
     
     # Gabungkan komentar
-    comment = f"{performance}. {completion}. {ratio}"
+    comment = f"{performance}. {completion}. {ratio}. Rekomendasi: {recommendation}"
     return comment
 
 # -------- UI STREAMLIT --------
@@ -251,6 +296,13 @@ if st.session_state.result and not st.session_state.ai_comment_loading:
             st.balloons()
             st.markdown(f"[🔗 Lihat Spreadsheet](https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID})")
             st.session_state.upload_success = True
+            
+            # Reset hasil setelah upload berhasil
+            if st.session_state.upload_success:
+                if st.button("➕ Tambah Data Baru"):
+                    st.session_state.result = None
+                    st.session_state.upload_success = False
+                    st.experimental_rerun()
         except Exception as e:
             st.error(f"❌ Gagal upload: {str(e)}")
 
@@ -269,19 +321,51 @@ with st.expander("ℹ️ Contoh Format Input"):
 # Tambahkan petunjuk konfigurasi
 with st.expander("🔧 Konfigurasi"):
     st.markdown("""
-    ### Konfigurasi API Key
+    ### Konfigurasi API Key dan Google Service Account
     
-    Untuk menggunakan fitur komentar AI, tambahkan OpenAI API key ke secrets Streamlit:
+    Untuk konfigurasi yang benar, tambahkan secrets berikut ke Streamlit Cloud:
     
-    1. Buat file `.streamlit/secrets.toml` di direktori proyek
-    2. Tambahkan baris berikut:
-       ```
-       OPENAI_API_KEY = "sk-your-api-key"
-       ```
-    3. Atau tambahkan sebagai environment variable bernama `OPENAI_API_KEY`
+    1. `OPENAI_API_KEY` = "api-key-anda"
+    2. `gcp_service_account` = {...} (objek JSON credential Google Service Account)
     
-    Jika API key tidak dikonfigurasi, aplikasi akan menggunakan generator komentar cadangan.
+    Atau tambahkan sebagai environment variable pada deployment lokal.
     """)
+
+# Tampilkan statistik historis jika tersedia
+with st.expander("📈 Statistik Trading (7 Hari Terakhir)"):
+    st.info("Untuk melihat statistik historis, pastikan Anda telah mengupload data sebelumnya.")
+    if st.button("🔄 Muat Statistik"):
+        try:
+            sheet = connect_to_gsheet()
+            # Ambil 7 data terakhir
+            data = sheet.get_all_records()[-7:]
+            if data:
+                import pandas as pd
+                import altair as alt
+                
+                df = pd.DataFrame(data)
+                
+                # Konversi winrate dari string ke numerik jika perlu
+                if 'Winrate' in df.columns:
+                    df['Winrate_num'] = df['Winrate'].str.rstrip('%').astype(float)
+                
+                # Buat chart
+                if len(df) > 0:
+                    st.write("### Winrate 7 Hari Terakhir")
+                    chart = alt.Chart(df).mark_line().encode(
+                        x=alt.X('Date:N', title='Tanggal'),
+                        y=alt.Y('Winrate_num:Q', title='Winrate (%)')
+                    ).properties(height=200)
+                    st.altair_chart(chart, use_container_width=True)
+                    
+                    st.write("### Data Lengkap")
+                    st.dataframe(df)
+                else:
+                    st.write("Belum ada data yang cukup untuk ditampilkan")
+            else:
+                st.write("Belum ada data yang tersimpan")
+        except Exception as e:
+            st.error(f"Gagal memuat statistik: {str(e)}")
 
 st.markdown("---")
 st.markdown("Made with ❤️ by Lian Capital")
