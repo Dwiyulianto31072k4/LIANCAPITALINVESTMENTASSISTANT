@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "lian-408711",
+  "private_key_id": "b0091a2f73a1f730c15a7c891b38216ca4686fc5",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDU4uhZTtWtFJsJ\nvWxLBptGxW0EpRtOUPy/IU99R8tlQuOYiD6JwnF4zXjQa+ojsQR7DQnn5xnQSDJC\nFw7rTVfQ3lt8AsY1VZB65r76fDj+mJ8V+Y79zZbCup0OPpnJUs0w+dLA+9Wr/MbE\nn9j+y9f/jGJSAv1v/DtViQpnp1BMIGJgt13RxnCDe1jN+2gISCNP6+ikH4BeT3vz\nXx7O6D0bRLnAHuVvdNCkM62+7MBiSmPlxdDISjCN0qwIYb3EkZmsXNcHWqq6SpQk\n1TQv1Di3gmtZzHhErEG6u8Y+k+i8DpX6FS04CTo3VnWV8PTSGMDPUzazt/31/BLH\nVvoeshvFAgMBAAECgf84VtSmzfY+l/Vv3nGKaXUuhZEUaZ2QXF6HNomS3i013z3c\nYDIswwjEr5wJjIWqbG6DIjA87ywlsvWaCAAqxY03+aC8cP+DneFepTJll/p9Zmaz\nqhftkzsSzdBCtM5+OSuUioj8CanCmmMAJk2HIOtI9h4PFjt8J4SMXngidmUJwAyg\niHSIh5B8wHxRw6L0ZD+NROap8P9VJqaPjWga3dFY9YPPQ+AgqoLuA5Btfmiw1W8h\ny3lHGSEAdSxfMkTVP/vURLLCOzWP/KD0G7dOdKYF1UTApmonqBOQfA5uky2SDzym\nPflkJJg8/TAbPvGdlemdZF2zDqU1othlM06pvEECgYEA8rrgl0bGgJqfa0GZSE34\nTD1UHlWyYArxe2D7csNh601fNpVq9OZHFGf3GwY679/SHQGJn6iW7QvMKZr8Pt4y\nuPueJy8FFGXwdWguNSI0jIi2Gh9i/lkglBklZDao5SrtMGcxABbPu3y7WCcxgszE\nhe8BOg4JXRS+k/w4W1sYTQUCgYEA4IZaty2JfJlCDWWnP/apwoENGtrUbbI3Vbwh\nq3NZRLcfp/AFbLCyZ8ysEJSUM/H3VTDU01RUNPXj1yUmnfZbyqof4c8na6evXF1K\nuXiqO9nZYtpdgjbZNcVA6HyO9652MrfP3yo6fju05khEc30wOh519L6Ie/mupWfC\nOUIFz8ECgYEAvD+Y7Vnzm0vP9bQDeCMYPbCWq4wU8g2qqOBXQvMq3v27qS6Kq/Jo\nD/htmaTkUqMIZnyJyqxKmP88UMwlc3CKcBKc3pDF5MMGkVfB9m1XyeJBMNNEyDRB\nYvp5mFYX+Nuo5pAxXXtTknmzJjQHXwUGKUVqcybttiXfhA/peViV6S0CgYBhSvce\nb3YnbwYHZiheeFXBukhifbcVvedqmHaCpB5nv27RSBohqkP05OUe3jOGevCxktJ2\nrRE8Td0oSqn8Q1gtbyEXqbusU+KShL6vtlEWVGV2B6gDmB7xxQNGe0s8mvYPLkW+\nr77fGqJeM6yt2u6+EJsOrk3YYy7B8D9irnB0QQKBgQCiDpqkyeALDgyeJP0R6MmU\nvpnaIjcNOpepAC324QrvX931zAnDuYFjtInbYfrewTkJ65fmsGneO4NHNvqlquwv\n1OpaJrZzxEL8SJ/eyd3cA/vO08y6WnND8sb5C8aPspxtKnX6KSDTrejcmBQ3iN4q\ngkg/prsz0WKJ55CyoiRBdg==\n-----END PRIVATE KEY-----\n",
+  "client_email": "streamlit-writer-capitalinvest@lian-408711.iam.gserviceaccount.com",
+  "client_id": "118403340754283074580",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/streamlit-writer-capitalinvest%40lian-408711.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
