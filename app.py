@@ -21,7 +21,7 @@ def connect_to_gsheet():
         )
     else:
         # Untuk development lokal
-        CREDENTIAL_PATH = "lian-408711-fe452dc9b79f.json"  # File json kredensial lokal
+        CREDENTIAL_PATH = "lian-408711-18cb4e8340e2.json"  # File json kredensial baru
         credentials = Credentials.from_service_account_file(
             CREDENTIAL_PATH, 
             scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
@@ -30,6 +30,10 @@ def connect_to_gsheet():
     client = gspread.authorize(credentials)
     sheet = client.open_by_key(SPREADSHEET_ID).worksheet(SHEET_NAME)
     return sheet
+
+# Sisanya sama seperti kode sebelumnya
+
+# Sisanya sama seperti kode sebelumnya
 
 # -------- PARSING FUNGSI DARI TEKS --------
 def parse_trading_summary(text):
