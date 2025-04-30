@@ -418,25 +418,25 @@ with st.expander("📈 Statistik Trading (7 Hari Terakhir)"):
                         # Winrate Chart
                         st.write("### Winrate 7 Hari Terakhir")
                         chart_winrate = alt.Chart(df_recent).mark_line(point=True).encode(
-                            x=alt.X('Date:N', title='Tanggal', sort=None),
+                            x=alt.X('Date_display:N', title='Tanggal', sort=None),
                             y=alt.Y('Winrate_num:Q', title='Winrate (%)', scale=alt.Scale(domain=[0, 100])),
-                            tooltip=['Date', winrate_col, 'Total_Signal', 'TP', 'SL']
+                            tooltip=['Date_display', winrate_col, 'Total_Signal', 'TP', 'SL']
                         ).properties(height=250)
                         st.altair_chart(chart_winrate, use_container_width=True)
                         
                         # TP/SL Chart
                         st.write("### Perbandingan TP vs SL")
-                        df_melted = pd.melt(df_recent, id_vars=['Date'], value_vars=['TP', 'SL'], 
+                        df_melted = pd.melt(df_recent, id_vars=['Date_display'], value_vars=['TP', 'SL'], 
                                           var_name='Type', value_name='Count')
                         
                         chart_tpsl = alt.Chart(df_melted).mark_bar().encode(
-                            x=alt.X('Date:N', title='Tanggal'),
+                            x=alt.X('Date_display:N', title='Tanggal'),
                             y=alt.Y('Count:Q', title='Jumlah'),
                             color=alt.Color('Type:N', scale=alt.Scale(
                                 domain=['TP', 'SL'],
                                 range=['#36b37e', '#ff5630']
                             )),
-                            tooltip=['Date', 'Type', 'Count']
+                            tooltip=['Date_display', 'Type', 'Count']
                         ).properties(height=250)
                         st.altair_chart(chart_tpsl, use_container_width=True)
                         
@@ -466,10 +466,18 @@ with st.expander("📈 Statistik Trading (7 Hari Terakhir)"):
                         # Data lengkap
                         st.write("### Data 7 Hari Terakhir")
                         # Make sure we use the actual column names from the dataframe
-                        display_columns = ['Date', 'Total_Signal', 'TP', 'SL', winrate_col]
-                        # Check if all columns exist in the dataframe before displaying
-                        valid_columns = [col for col in display_columns if col in df_recent.columns]
-                        st.dataframe(df_recent[valid_columns], use_container_width=True)
+                        if 'Date_display' in df_recent.columns:
+                            display_df = df_recent.copy()
+                            # Use Date_display for display purposes but keep original columns for reference
+                            display_columns = ['Date_display', 'Total_Signal', 'TP', 'SL', winrate_col]
+                            # Check if all columns exist in the dataframe before displaying
+                            valid_columns = [col for col in display_columns if col in display_df.columns]
+                            st.dataframe(display_df[valid_columns], use_container_width=True)
+                        else:
+                            # Fallback to original data if Date_display is not available
+                            display_columns = ['Date', 'Total_Signal', 'TP', 'SL', winrate_col]
+                            valid_columns = [col for col in display_columns if col in df_recent.columns]
+                            st.dataframe(df_recent[valid_columns], use_container_width=True)
                     else:
                         st.info("Belum ada data yang cukup untuk ditampilkan")
             else:
