@@ -4,7 +4,7 @@ from google.oauth2.service_account import Credentials
 import re
 
 # -------- KONFIGURASI GOOGLE SHEET --------
-SPREADSHEET_ID = "ISI_ID_SPREADSHEET_MU"
+SPREADSHEET_ID = "1g3XL1EllHoWV3jhmi7gT3at6MtCNTJBo8DQ1WyWhMEo"
 SHEET_NAME = "Sheet1"  # atau nama sheet yang kamu pakai
 CREDENTIAL_PATH = "lian-408711-af0e2662b03d.json"
 
