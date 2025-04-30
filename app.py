@@ -401,7 +401,7 @@ with st.expander("📈 Statistik Trading (7 Hari Terakhir)"):
                 
                 if not winrate_col:
                     st.error("Couldn't find a column containing winrate. Check your sheet headers.")
-                else:  # Remove the standalone 'return' by adding an 'else' block
+                else:
                     # Convert all numeric columns to proper numeric types
                     numeric_columns = ['Total_Signal', 'Finished', 'TP', 'SL']
                     for col in numeric_columns:
@@ -417,6 +417,11 @@ with st.expander("📈 Statistik Trading (7 Hari Terakhir)"):
                     
                     # Tunjukkan hanya 7 data terakhir
                     df_recent = df.tail(7)
+                    
+                    # PERBAIKAN: Tambahkan kolom Date_display untuk chart
+                    # Gunakan kolom Date yang ada sebagai dasar untuk Date_display
+                    if 'Date' in df_recent.columns:
+                        df_recent['Date_display'] = df_recent['Date']
                     
                     # Buat chart dengan Altair
                     if len(df_recent) > 0:
