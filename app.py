@@ -398,7 +398,11 @@ with st.expander("📈 Statistik Trading (7 Hari Terakhir)"):
                     st.error("Couldn't find a column containing winrate. Check your sheet headers.")
                 else:  # Remove the standalone 'return' by adding an 'else' block
                     # Convert winrate from string to numeric (handling % symbol if present)
-                    df['Winrate_num'] = df[winrate_col].astype(str).str.rstrip('%').astype(float)
+                    # Handle empty strings and convert to numeric safely
+                    df['Winrate_num'] = pd.to_numeric(
+                        df[winrate_col].astype(str).str.rstrip('%').replace('', '0'), 
+                        errors='coerce'
+                    ).fillna(0)
                     
                     # Tunjukkan hanya 7 data terakhir
                     df_recent = df.tail(7)
