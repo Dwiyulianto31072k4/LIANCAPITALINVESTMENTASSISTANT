@@ -1,37 +1,30 @@
 import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
-import re
 import json
+import re
 
-# -------- KONFIGURASI GOOGLE SHEET --------
+# -------- KONFIGURASI GOOGLE SHEETS --------
 SPREADSHEET_ID = "1g3XL1EllHoWV3jhmi7gT3at6MtCNTJBo8DQ1WyWhMEo"
-SHEET_NAME = "Sheet1"  # atau nama sheet yang kamu pakai
+SHEET_NAME = "Sheet1"
 
 # -------- KONEKSI GOOGLE SHEETS --------
 @st.cache_resource
 def connect_to_gsheet():
-    # Menggunakan variabel credentials_json dari secrets
-    if 'credentials_json' in st.secrets:
-        # Parse JSON string dari secrets
-        try:
-            credentials_info = json.loads(st.secrets["credentials_json"])
-            credentials = Credentials.from_service_account_info(
-                credentials_info,
-                scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-            )
-        except Exception as e:
-            st.error(f"Error parsing credentials_json: {str(e)}")
-            st.stop()
-    else:
-        st.error("Tidak menemukan credentials_json di secrets!")
-        st.stop()
-    
+    # Ambil dari secrets (sudah aman, tidak hardcode!)
+    credentials_info = json.loads(st.secrets["credentials_json"])
+    credentials = Credentials.from_service_account_info(
+        credentials_info,
+        scopes=[
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive",
+        ]
+    )
     client = gspread.authorize(credentials)
     sheet = client.open_by_key(SPREADSHEET_ID).worksheet(SHEET_NAME)
     return sheet
 
-# -------- PARSING FUNGSI DARI TEKS --------
+# -------- PARSING FUNGSI --------
 def parse_trading_summary(text):
     date_match = re.search(r"📅\s*(.+?)\s+Daily", text)
     date = date_match.group(1) if date_match else "Unknown"
@@ -51,20 +44,19 @@ def parse_trading_summary(text):
         "Winrate_pct": winrate,
     }
 
-# -------- STREAMLIT UI --------
+# -------- UI STREAMLIT --------
 st.title("📊 Rekapan Hasil Trading Harian")
 
-# Inisialisasi state
 if 'result' not in st.session_state:
     st.session_state.result = None
 if 'upload_success' not in st.session_state:
     st.session_state.upload_success = False
 
-# Mode input otomatis
+# Input otomatis
 input_text = st.text_area("Masukkan teks rekap sinyal trading:", height=300)
 process_btn = st.button("🔍 Proses dan Hitung")
 
-# Mode input manual (jika parsing gagal)
+# Input manual
 st.markdown("---")
 st.subheader("Atau Input Manual")
 col1, col2 = st.columns(2)
@@ -78,18 +70,16 @@ with col2:
 
 manual_btn = st.button("💾 Simpan Data Manual")
 
-# Proses data otomatis
+# Proses parsing otomatis
 if process_btn and input_text:
     try:
         result = parse_trading_summary(input_text)
-        if result:
-            st.session_state.result = result
-            st.session_state.result["Comment"] = ""  # Initialize empty comment
+        st.session_state.result = result
+        st.session_state.result["Comment"] = ""
     except Exception as e:
-        st.error(f"❌ Error saat memproses teks: {str(e)}")
-        st.info("Pastikan format teks sesuai dengan yang diharapkan.")
-        
-# Proses data manual
+        st.error(f"❌ Error saat parsing: {str(e)}")
+
+# Proses input manual
 if manual_btn:
     if manual_date and manual_total >= 0 and manual_tp >= 0 and manual_sl >= 0:
         finished = manual_tp + manual_sl
@@ -106,20 +96,20 @@ if manual_btn:
     else:
         st.warning("⚠️ Harap isi semua field dengan benar")
 
-# Tampilkan hasil dan opsi upload
+# Upload
 if st.session_state.result:
     st.markdown("---")
     st.subheader("📋 Hasil Data:")
     
-    # Tambahkan kolom comment jika dari parsing otomatis
     if process_btn and input_text:
-        st.session_state.result["Comment"] = st.text_input("Comment (opsional):", 
-                                                          placeholder="Contoh: Good momentum, banyak TP",
-                                                          value=st.session_state.result.get("Comment", ""))
-    
+        st.session_state.result["Comment"] = st.text_input(
+            "Comment (opsional):",
+            placeholder="Contoh: Good momentum, banyak TP",
+            value=st.session_state.result.get("Comment", "")
+        )
+
     st.write(st.session_state.result)
-    
-    # Tombol upload terpisah
+
     upload_btn = st.button("📤 Upload ke Google Sheets", key="upload_final")
     if upload_btn:
         try:
@@ -133,14 +123,13 @@ if st.session_state.result:
                 f"{st.session_state.result['Winrate_pct']}%",
                 st.session_state.result["Comment"]
             ])
-            st.success("✅ Data berhasil ditambahkan ke Google Sheets!")
-            st.markdown(f"[Lihat data di spreadsheet](https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID})")
+            st.success("✅ Data berhasil diupload ke Google Sheets!")
+            st.markdown(f"[🔗 Lihat Spreadsheet](https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID})")
             st.session_state.upload_success = True
         except Exception as e:
-            st.error(f"❌ Error saat mengupload ke Google Sheets: {str(e)}")
-            st.info("Pastikan service account memiliki akses ke spreadsheet dan ID spreadsheet sudah benar.")
+            st.error(f"❌ Gagal upload: {str(e)}")
 
-# Tampilkan contoh format input
+# Contoh input
 with st.expander("ℹ️ Contoh Format Input"):
     st.markdown("""
     ```
@@ -152,6 +141,5 @@ with st.expander("ℹ️ Contoh Format Input"):
     ```
     """)
 
-# Menambahkan footer
 st.markdown("---")
 st.markdown("Made with ❤️ by Lian Capital")
