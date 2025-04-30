@@ -415,8 +415,21 @@ with st.expander("📈 Statistik Trading (7 Hari Terakhir)"):
                         errors='coerce'
                     ).fillna(0)
                     
-                    # Tunjukkan hanya 7 data terakhir
-                    df_recent = df.tail(7)
+                    # Filter out rows that have no data (all zeros or empty values)
+                    # Identify numeric columns to check for zeros
+                    data_columns = ['Total_Signal', 'TP', 'SL']
+                    valid_columns = [col for col in data_columns if col in df.columns]
+                    
+                    # Add a new column to check if row has actual data (not all zeros)
+                    if valid_columns:
+                        df['has_data'] = df[valid_columns].sum(axis=1) > 0
+                        # Filter to only rows that have data
+                        df_filtered = df[df['has_data']]
+                    else:
+                        df_filtered = df
+                    
+                    # Tunjukkan hanya 7 data terakhir yang memiliki data
+                    df_recent = df_filtered.tail(7)
                     
                     # PERBAIKAN: Tambahkan kolom Date_display untuk chart
                     # Gunakan kolom Date yang ada sebagai dasar untuk Date_display
