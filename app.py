@@ -397,6 +397,12 @@ with st.expander("📈 Statistik Trading (7 Hari Terakhir)"):
                 if not winrate_col:
                     st.error("Couldn't find a column containing winrate. Check your sheet headers.")
                 else:  # Remove the standalone 'return' by adding an 'else' block
+                    # Convert all numeric columns to proper numeric types
+                    numeric_columns = ['Total_Signal', 'Finished', 'TP', 'SL']
+                    for col in numeric_columns:
+                        if col in df.columns:
+                            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
+                    
                     # Convert winrate from string to numeric (handling % symbol if present)
                     # Handle empty strings and convert to numeric safely
                     df['Winrate_num'] = pd.to_numeric(
@@ -443,12 +449,12 @@ with st.expander("📈 Statistik Trading (7 Hari Terakhir)"):
                         
                         col1, col2, col3 = st.columns(3)
                         col1.metric("Rata-rata Winrate", f"{avg_winrate:.1f}%")
-                        col2.metric("Total TP", total_tp)
-                        col3.metric("Total SL", total_sl)
+                        col2.metric("Total TP", int(total_tp))
+                        col3.metric("Total SL", int(total_sl))
                         
                         # Baris kedua
                         col4, col5, col6 = st.columns(3)
-                        col4.metric("Total Signals", total_signals)
+                        col4.metric("Total Signals", int(total_signals))
                         
                         if total_tp + total_sl > 0:
                             overall_winrate = (total_tp / (total_tp + total_sl)) * 100
