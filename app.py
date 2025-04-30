@@ -396,71 +396,68 @@ with st.expander("📈 Statistik Trading (7 Hari Terakhir)"):
                 
                 if not winrate_col:
                     st.error("Couldn't find a column containing winrate. Check your sheet headers.")
-                    return
-                
-                # Convert winrate from string to numeric (handling % symbol if present)
-                df['Winrate_num'] = df[winrate_col].astype(str).str.rstrip('%').astype(float)
-                
-                # Continue with the rest of your code...
-                
-                # Tunjukkan hanya 7 data terakhir
-                df_recent = df.tail(7)
-                
-                # Buat chart dengan Altair
-                if len(df_recent) > 0:
-                    # Winrate Chart
-                    st.write("### Winrate 7 Hari Terakhir")
-                    chart_winrate = alt.Chart(df_recent).mark_line(point=True).encode(
-                        x=alt.X('Date:N', title='Tanggal', sort=None),
-                        y=alt.Y('Winrate_num:Q', title='Winrate (%)', scale=alt.Scale(domain=[0, 100])),
-                        tooltip=['Date', 'Winrate', 'Total_Signal', 'TP', 'SL']
-                    ).properties(height=250)
-                    st.altair_chart(chart_winrate, use_container_width=True)
+                else:  # Remove the standalone 'return' by adding an 'else' block
+                    # Convert winrate from string to numeric (handling % symbol if present)
+                    df['Winrate_num'] = df[winrate_col].astype(str).str.rstrip('%').astype(float)
                     
-                    # TP/SL Chart
-                    st.write("### Perbandingan TP vs SL")
-                    df_melted = pd.melt(df_recent, id_vars=['Date'], value_vars=['TP', 'SL'], 
-                                      var_name='Type', value_name='Count')
+                    # Tunjukkan hanya 7 data terakhir
+                    df_recent = df.tail(7)
                     
-                    chart_tpsl = alt.Chart(df_melted).mark_bar().encode(
-                        x=alt.X('Date:N', title='Tanggal'),
-                        y=alt.Y('Count:Q', title='Jumlah'),
-                        color=alt.Color('Type:N', scale=alt.Scale(
-                            domain=['TP', 'SL'],
-                            range=['#36b37e', '#ff5630']
-                        )),
-                        tooltip=['Date', 'Type', 'Count']
-                    ).properties(height=250)
-                    st.altair_chart(chart_tpsl, use_container_width=True)
-                    
-                    # Ringkasan statistik
-                    st.write("### Ringkasan Statistik")
-                    avg_winrate = df_recent['Winrate_num'].mean()
-                    total_tp = df_recent['TP'].sum()
-                    total_sl = df_recent['SL'].sum() 
-                    total_signals = df_recent['Total_Signal'].sum()
-                    
-                    col1, col2, col3 = st.columns(3)
-                    col1.metric("Rata-rata Winrate", f"{avg_winrate:.1f}%")
-                    col2.metric("Total TP", total_tp)
-                    col3.metric("Total SL", total_sl)
-                    
-                    # Baris kedua
-                    col4, col5, col6 = st.columns(3)
-                    col4.metric("Total Signals", total_signals)
-                    
-                    if total_tp + total_sl > 0:
-                        overall_winrate = (total_tp / (total_tp + total_sl)) * 100
-                        col5.metric("Overall Winrate", f"{overall_winrate:.1f}%")
-                    
-                    completion_rate = ((total_tp + total_sl) / total_signals) * 100 if total_signals > 0 else 0
-                    col6.metric("Completion Rate", f"{completion_rate:.1f}%")
-                    
-                    # Data lengkap
-                    st.write("### Data 7 Hari Terakhir")
-                    st.dataframe(df_recent[['Date', 'Total_Signal', 'TP', 'SL', 'Winrate']], use_container_width=True)
-                else:
-                    st.info("Belum ada data yang cukup untuk ditampilkan")
+                    # Buat chart dengan Altair
+                    if len(df_recent) > 0:
+                        # Winrate Chart
+                        st.write("### Winrate 7 Hari Terakhir")
+                        chart_winrate = alt.Chart(df_recent).mark_line(point=True).encode(
+                            x=alt.X('Date:N', title='Tanggal', sort=None),
+                            y=alt.Y('Winrate_num:Q', title='Winrate (%)', scale=alt.Scale(domain=[0, 100])),
+                            tooltip=['Date', 'Winrate', 'Total_Signal', 'TP', 'SL']
+                        ).properties(height=250)
+                        st.altair_chart(chart_winrate, use_container_width=True)
+                        
+                        # TP/SL Chart
+                        st.write("### Perbandingan TP vs SL")
+                        df_melted = pd.melt(df_recent, id_vars=['Date'], value_vars=['TP', 'SL'], 
+                                          var_name='Type', value_name='Count')
+                        
+                        chart_tpsl = alt.Chart(df_melted).mark_bar().encode(
+                            x=alt.X('Date:N', title='Tanggal'),
+                            y=alt.Y('Count:Q', title='Jumlah'),
+                            color=alt.Color('Type:N', scale=alt.Scale(
+                                domain=['TP', 'SL'],
+                                range=['#36b37e', '#ff5630']
+                            )),
+                            tooltip=['Date', 'Type', 'Count']
+                        ).properties(height=250)
+                        st.altair_chart(chart_tpsl, use_container_width=True)
+                        
+                        # Ringkasan statistik
+                        st.write("### Ringkasan Statistik")
+                        avg_winrate = df_recent['Winrate_num'].mean()
+                        total_tp = df_recent['TP'].sum()
+                        total_sl = df_recent['SL'].sum() 
+                        total_signals = df_recent['Total_Signal'].sum()
+                        
+                        col1, col2, col3 = st.columns(3)
+                        col1.metric("Rata-rata Winrate", f"{avg_winrate:.1f}%")
+                        col2.metric("Total TP", total_tp)
+                        col3.metric("Total SL", total_sl)
+                        
+                        # Baris kedua
+                        col4, col5, col6 = st.columns(3)
+                        col4.metric("Total Signals", total_signals)
+                        
+                        if total_tp + total_sl > 0:
+                            overall_winrate = (total_tp / (total_tp + total_sl)) * 100
+                            col5.metric("Overall Winrate", f"{overall_winrate:.1f}%")
+                        
+                        completion_rate = ((total_tp + total_sl) / total_signals) * 100 if total_signals > 0 else 0
+                        col6.metric("Completion Rate", f"{completion_rate:.1f}%")
+                        
+                        # Data lengkap
+                        st.write("### Data 7 Hari Terakhir")
+                        st.dataframe(df_recent[['Date', 'Total_Signal', 'TP', 'SL', 'Winrate']], use_container_width=True)
+                    else:
+                        st.info("Belum ada data yang cukup untuk ditampilkan")
             else:
                 st.info("Belum ada data yang tersimpan dalam Google Sheets")
         except Exception as e:
