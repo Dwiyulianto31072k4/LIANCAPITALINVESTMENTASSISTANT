@@ -1,4 +1,7 @@
-streamlit
-gspread
-oauth2client
-pandas
+streamlit==1.31.0
+pandas==2.2.0
+gspread==5.12.2
+google-auth==2.23.0
+google-auth-oauthlib==1.1.0
+requests==2.31.0
+python-dotenv==1.0.0
