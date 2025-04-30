@@ -198,6 +198,7 @@ st.set_page_config(
 st.title("📊 Rekapan Hasil Trading Harian")
 st.markdown("Aplikasi sederhana untuk mencatat dan menganalisis performa trading harian Anda.")
 
+# Inisialisasi session state
 if 'result' not in st.session_state:
     st.session_state.result = None
 if 'upload_success' not in st.session_state:
@@ -241,34 +242,34 @@ if not st.session_state.result:
     
     col1, col2 = st.columns([1, 1])
     with col1:
-        process_btn = st.button("🔍 Proses dan Hitung", use_container_width=True)
+        process_button = st.button("🔍 Proses dan Hitung", use_container_width=True)
     with col2:
-        clear_btn = st.button("🧹 Bersihkan", use_container_width=True)
-        if clear_btn:
+        clear_button = st.button("🧹 Bersihkan", use_container_width=True)
+        if clear_button:
             st.experimental_rerun()
 
-# Proses parsing otomatis
-if process_btn and input_text:
-    try:
-        result = parse_trading_summary(input_text)
-        st.session_state.result = result
-        
-        # Set flag untuk loading AI comment
-        st.session_state.ai_comment_loading = True
-        st.experimental_rerun()
-        
-    except Exception as e:
-        st.error(f"❌ Error saat parsing: {str(e)}")
-        st.markdown("""
-        **Pastikan format sesuai contoh:**
-        ```
-        📅 Tanggal Daily Trading Report
-        
-        Total Signals: [Angka]
-        Take-Profits: [Angka]
-        Stop-Losses: [Angka]
-        ```
-        """)
+    # Proses parsing otomatis
+    if process_button and input_text:
+        try:
+            result = parse_trading_summary(input_text)
+            st.session_state.result = result
+            
+            # Set flag untuk loading AI comment
+            st.session_state.ai_comment_loading = True
+            st.experimental_rerun()
+            
+        except Exception as e:
+            st.error(f"❌ Error saat parsing: {str(e)}")
+            st.markdown("""
+            **Pastikan format sesuai contoh:**
+            ```
+            📅 Tanggal Daily Trading Report
+            
+            Total Signals: [Angka]
+            Take-Profits: [Angka]
+            Stop-Losses: [Angka]
+            ```
+            """)
 
 # Proses loading AI comment jika diperlukan
 if st.session_state.ai_comment_loading and st.session_state.result:
@@ -372,9 +373,7 @@ with st.expander("📈 Statistik Trading (7 Hari Terakhir)"):
     if st.button("🔄 Muat Statistik"):
         try:
             import pandas as pd
-            import matplotlib.pyplot as plt
             import altair as alt
-            from datetime import datetime, timedelta
             
             sheet = connect_to_gsheet()
             
