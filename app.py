@@ -5,7 +5,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
 # Konfigurasi Google Sheets
-KEYFILE = "lian-408711-8736ae6e6b31.json"
+KEYFILE = "lian-408711-b0091a2f73a1.json"
 SHEET_ID = "1g3XL1EllHoWV3jhmi7gT3at6MtCNTJBo8DQ1WyWhMEo"
 WS_NAME = "Tabel1"
 
