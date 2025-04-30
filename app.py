@@ -414,7 +414,7 @@ with st.expander("📈 Statistik Trading (7 Hari Terakhir)"):
                         chart_winrate = alt.Chart(df_recent).mark_line(point=True).encode(
                             x=alt.X('Date:N', title='Tanggal', sort=None),
                             y=alt.Y('Winrate_num:Q', title='Winrate (%)', scale=alt.Scale(domain=[0, 100])),
-                            tooltip=['Date', 'Winrate', 'Total_Signal', 'TP', 'SL']
+                            tooltip=['Date', winrate_col, 'Total_Signal', 'TP', 'SL']
                         ).properties(height=250)
                         st.altair_chart(chart_winrate, use_container_width=True)
                         
@@ -459,7 +459,11 @@ with st.expander("📈 Statistik Trading (7 Hari Terakhir)"):
                         
                         # Data lengkap
                         st.write("### Data 7 Hari Terakhir")
-                        st.dataframe(df_recent[['Date', 'Total_Signal', 'TP', 'SL', 'Winrate']], use_container_width=True)
+                        # Make sure we use the actual column names from the dataframe
+                        display_columns = ['Date', 'Total_Signal', 'TP', 'SL', winrate_col]
+                        # Check if all columns exist in the dataframe before displaying
+                        valid_columns = [col for col in display_columns if col in df_recent.columns]
+                        st.dataframe(df_recent[valid_columns], use_container_width=True)
                     else:
                         st.info("Belum ada data yang cukup untuk ditampilkan")
             else:
