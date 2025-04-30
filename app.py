@@ -6,7 +6,7 @@ import re
 # -------- KONFIGURASI GOOGLE SHEET --------
 SPREADSHEET_ID = "ISI_ID_SPREADSHEET_MU"
 SHEET_NAME = "Sheet1"  # atau nama sheet yang kamu pakai
-CREDENTIAL_PATH = "credentials.json"
+CREDENTIAL_PATH = "lian-408711-af0e2662b03d.json"
 
 # -------- KONEKSI GOOGLE SHEETS --------
 @st.cache_resource
