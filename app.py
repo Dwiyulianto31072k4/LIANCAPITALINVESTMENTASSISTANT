@@ -320,20 +320,19 @@ def get_ai_trading_comment(data, language="id"):
         completion_rate=completion_rate
     )
     
-    try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo", # atau "gpt-4" untuk hasil lebih baik
-            messages=[
-                {"role": "system", "content": LANGUAGES[language]["ai_system_prompt"]},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=150,
-            temperature=0.7
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        st.error(f"Error saat menghubungi AI: {str(e)}")
-        return generate_backup_comment(data, language)  # Gunakan backup comment jika AI gagal
+    # Panggil OpenAI tanpa fallback
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",  # atau "gpt-4"
+        messages=[
+            {"role": "system", "content": LANGUAGES[language]["ai_system_prompt"]},
+            {"role": "user",   "content": prompt}
+        ],
+        max_tokens=150,
+        temperature=0.7
+    )
+    return response.choices[0].message.content.strip()
+
+
 
 # -------- PARSING FUNGSI --------
 def parse_trading_summary(text):
@@ -544,20 +543,21 @@ if not st.session_state.result:
         except Exception as e:
             st.error(f"{lang['parsing_error']}{str(e)}")
             st.markdown(lang["format_reminder"])
-
-# Proses loading AI comment jika diperlukan
 if st.session_state.ai_comment_loading and st.session_state.result:
     with st.spinner(lang["loading_ai"]):
         try:
-            ai_comment = get_ai_trading_comment(st.session_state.result, st.session_state.language)
+            ai_comment = get_ai_trading_comment(
+                st.session_state.result,
+                st.session_state.language
+            )
             st.session_state.result["Comment"] = ai_comment
         except Exception as e:
-            st.warning(f"{lang['ai_error']}{str(e)}")
-            backup_comment = generate_backup_comment(st.session_state.result, st.session_state.language)
-            st.session_state.result["Comment"] = backup_comment
-        
-        st.session_state.ai_comment_loading = False
-        st.experimental_rerun()
+            st.error(f"Error AI: {e}")
+            # atau: st.session_state.result["Comment"] = ""
+        finally:
+            st.session_state.ai_comment_loading = False
+            st.experimental_rerun()
+
 
 # Tampilkan hasil
 if st.session_state.result and not st.session_state.ai_comment_loading:
