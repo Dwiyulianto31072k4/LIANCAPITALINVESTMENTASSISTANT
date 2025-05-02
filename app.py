@@ -542,6 +542,111 @@ if not st.session_state.result:
             st.experimental_rerun()
             
         except Exception as e:
+            st.error(f"{lang['parsing_error']}{str(e)}")
+            st.markdown(lang["format_reminder"])
+
+# Proses loading AI comment jika diperlukan
+if st.session_state.ai_comment_loading and st.session_state.result:
+    with st.spinner(lang["loading_ai"]):
+        try:
+            ai_comment = get_ai_trading_comment(st.session_state.result, st.session_state.language)
+            st.session_state.result["Comment"] = ai_comment
+        except Exception as e:
+            st.warning(f"{lang['ai_error']}{str(e)}")
+            backup_comment = generate_backup_comment(st.session_state.result, st.session_state.language)
+            st.session_state.result["Comment"] = backup_comment
+        
+        st.session_state.ai_comment_loading = False
+        st.experimental_rerun()
+
+# Tampilkan hasil
+if st.session_state.result and not st.session_state.ai_comment_loading:
+    st.markdown("---")
+    st.subheader(lang["results_header"])
+    
+    # Buat kartu metrik dengan gaya yang lebih baik
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric(lang["total_signal"], st.session_state.result["Total_Signal"])
+    with col2:
+        st.metric(lang["take_profits"], st.session_state.result["TP"])
+    with col3:
+        st.metric(lang["stop_losses"], st.session_state.result["SL"])
+    
+    col4, col5, col6 = st.columns(3)
+    with col4:
+        st.metric(lang["date"], st.session_state.result["Date"])
+    with col5:
+        st.metric(lang["finished"], st.session_state.result["Finished"])
+    with col6:
+        # Use the correct winrate label
+        winrate = st.session_state.result["Winrate_pct"]
+        
+        # Tampilkan winrate dengan warna berdasarkan nilai
+        if winrate >= 70:
+            st.markdown(f"<h3 style='color:#36B37E'>{lang['winrate']}: {winrate}%</h3>", unsafe_allow_html=True)
+        elif winrate < 50:
+            st.markdown(f"<h3 style='color:#FF5630'>{lang['winrate']}: {winrate}%</h3>", unsafe_allow_html=True)
+        else:
+            st.markdown(f"<h3>{lang['winrate']}: {winrate}%</h3>", unsafe_allow_html=True)
+
+    # Tampilkan komentar AI
+    st.subheader(lang["analysis_header"])
+    st.info(st.session_state.result.get("Comment", ""))
+    
+    # Edit komentar AI jika perlu
+    edited_comment = st.text_area(
+        lang["edit_analysis"],
+        value=st.session_state.result.get("Comment", ""),
+        height=100
+    )
+    st.session_state.result["Comment"] = edited_comment
+
+    # Tombol upload final
+    col_back, col_upload = st.columns([1, 2])
+    
+    with col_back:
+        if st.button(lang["back_button"], use_container_width=True):
+            st.session_state.result = None
+            st.experimental_rerun()
+    
+    with col_upload:
+        upload_btn = st.button(lang["save_button"], key="upload_final", use_container_width=True)
+    
+    if upload_btn:
+        try:
+            with st.spinner(lang["saving_data"]):
+                sheet = connect_to_gsheet()
+                
+                # Format tanggal yang lebih konsisten untuk keperluan analisis
+                date_str = st.session_state.result["Date"]
+                
+                # Simpan data ke Google Sheets
+                sheet.append_row([
+                    date_str,  # Simpan tanggal asli
+                    st.session_state.result["Total_Signal"],
+                    st.session_state.result["Finished"],
+                    st.session_state.result["TP"],
+                    st.session_state.result["SL"],
+                    f"{st.session_state.result['Winrate_pct']}%",
+                    st.session_state.result["Comment"]
+                ])
+            st.success(lang["save_success"])
+            st.balloons()
+            
+            # Tampilkan link ke spreadsheet
+            st.markdown(f"[{lang['view_spreadsheet']}](https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID})")
+            
+            # Reset status dan tampilkan tombol untuk data baru
+            st.session_state.upload_success = True
+            
+            if st.button(lang["add_new_button"], key="add_new"):
+                st.session_state.result = None
+                st.session_state.upload_success = False
+                st.experimental_rerun()
+                
+        except Exception as e:
             st.error(f"{lang['upload_fail']}{str(e)}")
 
 with st.expander(lang["stats_header"]):
@@ -682,109 +787,4 @@ with st.expander(lang["config_header"]):
     st.markdown(lang["config_text"])
 
 st.markdown("---")
-st.markdown(lang["footer"], unsafe_allow_html=True)lang['parsing_error']}{str(e)}")
-            st.markdown(lang["format_reminder"])
-
-# Proses loading AI comment jika diperlukan
-if st.session_state.ai_comment_loading and st.session_state.result:
-    with st.spinner(lang["loading_ai"]):
-        try:
-            ai_comment = get_ai_trading_comment(st.session_state.result, st.session_state.language)
-            st.session_state.result["Comment"] = ai_comment
-        except Exception as e:
-            st.warning(f"{lang['ai_error']}{str(e)}")
-            backup_comment = generate_backup_comment(st.session_state.result, st.session_state.language)
-            st.session_state.result["Comment"] = backup_comment
-        
-        st.session_state.ai_comment_loading = False
-        st.experimental_rerun()
-
-# Tampilkan hasil
-if st.session_state.result and not st.session_state.ai_comment_loading:
-    st.markdown("---")
-    st.subheader(lang["results_header"])
-    
-    # Buat kartu metrik dengan gaya yang lebih baik
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric(lang["total_signal"], st.session_state.result["Total_Signal"])
-    with col2:
-        st.metric(lang["take_profits"], st.session_state.result["TP"])
-    with col3:
-        st.metric(lang["stop_losses"], st.session_state.result["SL"])
-    
-    col4, col5, col6 = st.columns(3)
-    with col4:
-        st.metric(lang["date"], st.session_state.result["Date"])
-    with col5:
-        st.metric(lang["finished"], st.session_state.result["Finished"])
-    with col6:
-        # Use the correct winrate label
-        winrate = st.session_state.result["Winrate_pct"]
-        
-        # Tampilkan winrate dengan warna berdasarkan nilai
-        if winrate >= 70:
-            st.markdown(f"<h3 style='color:#36B37E'>{lang['winrate']}: {winrate}%</h3>", unsafe_allow_html=True)
-        elif winrate < 50:
-            st.markdown(f"<h3 style='color:#FF5630'>{lang['winrate']}: {winrate}%</h3>", unsafe_allow_html=True)
-        else:
-            st.markdown(f"<h3>{lang['winrate']}: {winrate}%</h3>", unsafe_allow_html=True)
-
-    # Tampilkan komentar AI
-    st.subheader(lang["analysis_header"])
-    st.info(st.session_state.result.get("Comment", ""))
-    
-    # Edit komentar AI jika perlu
-    edited_comment = st.text_area(
-        lang["edit_analysis"],
-        value=st.session_state.result.get("Comment", ""),
-        height=100
-    )
-    st.session_state.result["Comment"] = edited_comment
-
-    # Tombol upload final
-    col_back, col_upload = st.columns([1, 2])
-    
-    with col_back:
-        if st.button(lang["back_button"], use_container_width=True):
-            st.session_state.result = None
-            st.experimental_rerun()
-    
-    with col_upload:
-        upload_btn = st.button(lang["save_button"], key="upload_final", use_container_width=True)
-    
-    if upload_btn:
-        try:
-            with st.spinner(lang["saving_data"]):
-                sheet = connect_to_gsheet()
-                
-                # Format tanggal yang lebih konsisten untuk keperluan analisis
-                date_str = st.session_state.result["Date"]
-                
-                # Simpan data ke Google Sheets
-                sheet.append_row([
-                    date_str,  # Simpan tanggal asli
-                    st.session_state.result["Total_Signal"],
-                    st.session_state.result["Finished"],
-                    st.session_state.result["TP"],
-                    st.session_state.result["SL"],
-                    f"{st.session_state.result['Winrate_pct']}%",
-                    st.session_state.result["Comment"]
-                ])
-            st.success(lang["save_success"])
-            st.balloons()
-            
-            # Tampilkan link ke spreadsheet
-            st.markdown(f"[{lang['view_spreadsheet']}](https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID})")
-            
-            # Reset status dan tampilkan tombol untuk data baru
-            st.session_state.upload_success = True
-            
-            if st.button(lang["add_new_button"], key="add_new"):
-                st.session_state.result = None
-                st.session_state.upload_success = False
-                st.experimental_rerun()
-                
-        except Exception as e:
-            st.error(f"{
+st.markdown(lang["footer"], unsafe_allow_html=True)
