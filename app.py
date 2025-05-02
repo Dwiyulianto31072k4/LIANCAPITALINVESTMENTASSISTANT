@@ -291,10 +291,17 @@ def connect_to_gsheet():
 
 # -------- KONEKSI OPENAI API --------
 def get_openai_client():
+    # Ambil API key dari Streamlit Secrets atau env
     api_key = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
-    if not api_key:
+    
+    # Debug: tampilkan 8 karakter pertama key untuk verifikasi
+    if api_key:
+        st.write("DEBUG: OPENAI_API_KEY ter-load:", api_key[:8] + "…")
+    else:
         st.error("OpenAI API key tidak ditemukan!")
         return None
+    
+    # Kembalikan client OpenAI
     return OpenAI(api_key=api_key)
 
 # -------- FUNGSI AI KOMENTAR --------
